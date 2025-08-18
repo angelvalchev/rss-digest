@@ -47,7 +47,7 @@ CATEGORIES = config["categories"]
 EXCLUDED_TOPICS = config["excluded_topics"]
 
 DEFAULT_HOURS = 24
-OUTPUT_HTML = "rss_summary.html"
+OUTPUT_HTML = "digest.html"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
