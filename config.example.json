@@ -1,7 +1,5 @@
 {
   "rss_feeds": [
-    "https://www.dnevnik.bg/rss/",
-    "https://www.capital.bg/rss/",
-    "https://www.reutersagency.com/feed/?best-topics=politics"
+    "https://example.com/rss"
   ]
 }
