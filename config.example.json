@@ -1,5 +1,14 @@
 {
   "rss_feeds": [
     "https://example.com/rss"
+  ],
+  "categories": {
+    "technology": ["ai", "machine learning", "cloud"],
+    "finance": ["stocks", "crypto"],
+    "general": []
+  },
+  "excluded_topics": [
+    "celebrity gossip",
+    "sports betting"
   ]
 }
