@@ -1,11 +1,3 @@
-#
-//  rss_summarizer.py
-//  
-//
-//  Created by Angel Valchev on 18.08.25.
-//
-
-
 import argparse
 import feedparser
 import hashlib
