@@ -5,3 +5,4 @@ __pycache__/
 .DS_Store
 digest.html
 rss_summary.html
+.venv/
