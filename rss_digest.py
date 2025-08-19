@@ -209,110 +209,142 @@ def save_html(parsed_articles, output_file=OUTPUT_HTML):
 <meta charset="UTF-8">
 <title>RSS News Summary</title>
 <style>
-  /* --- Dark night mode theme --- */
-  body { 
-    font-family: Arial, sans-serif; 
-    margin: 20px; 
-    background: #1c1c1e;  /* macOS dark background */
-    color: #f0f0f5;       /* light text */
-  }
-  h1 { 
-    background: #2c2c2e; 
-    color: #fff; 
-    padding: 12px 16px; 
-    border-radius: 8px; 
-  }
-  h2 { 
-    color: #f0f0f5; 
-    margin-top: 24px; 
-    background:#2c2c2e; 
-    padding:10px 12px; 
-    border-radius:8px; 
-  }
-  .article { 
-    background: #2c2c2e; 
-    border-radius: 8px; 
-    padding: 12px; 
-    margin: 12px 0; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
-  }
-  .article a { 
-    text-decoration: none; 
-    color: #0a84ff; 
-    font-weight: bold; 
-  }
-  .article a:hover { 
-    text-decoration: underline; 
-  }
-  .article p { 
-    margin: 6px 0 0; 
-    color: #d0d0d5; 
-    line-height: 1.4; 
-  }
-  /* --- Images adjustments --- */
-  .article img, .modal-img {
-    max-width: 50%;        /* smaller images */
-    height: auto;
-    margin: 6px 0;
-    border-radius: 6px;
-    display: block;
-    filter: brightness(0.85) contrast(1.05); /* night mode friendly */
-  }
+/* Default light theme */
+body { 
+  font-family: Arial, sans-serif; 
+  margin: 20px; 
+  background: #ffffff; 
+  color: #1c1c1e; 
+}
 
-  /* --- Modal styles --- */
-  .modal {
-    display: none; 
-    position: fixed; 
-    z-index: 9999; 
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-  }
-  .modal-content {
+h1 { 
+  background: #f0f0f5; 
+  color: #1c1c1e; 
+  padding: 12px 16px; 
+  border-radius: 8px; 
+}
+
+h2 { 
+  color: #1c1c1e; 
+  margin-top: 24px; 
+  background:#f0f0f5; 
+  padding:10px 12px; 
+  border-radius:8px; 
+}
+
+.article { 
+  background: #f0f0f5; 
+  border-radius: 8px; 
+  padding: 12px; 
+  margin: 12px 0; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+}
+
+.article a { 
+  text-decoration: none; 
+  color: #0066cc; 
+  font-weight: bold; 
+}
+
+.article a:hover { 
+  text-decoration: underline; 
+}
+
+.article p { 
+  margin: 6px 0 0; 
+  color: #333; 
+  line-height: 1.4; 
+}
+
+/* Images adjustments */
+.article img, .modal-img {
+  max-width: 50%;        
+  height: auto;
+  margin: 6px 0;
+  border-radius: 6px;
+  display: block;
+  filter: brightness(0.95) contrast(1.05);
+}
+
+/* Modal styles */
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 9999; 
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background: #f0f0f5; 
+  margin: 5% auto; 
+  padding: 20px; 
+  border-radius: 12px;
+  width: min(900px, 92vw); 
+  max-height: 82vh; 
+  overflow-y: auto; 
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  color: #1c1c1e;
+}
+
+.modal-header { 
+  display:flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  gap: 12px; 
+}
+
+.modal-title { 
+  margin: 0; 
+  font-size: 1.25rem; 
+}
+
+.modal-close { 
+  cursor: pointer; 
+  font-size: 1.5rem; 
+  border:none; 
+  background:transparent; 
+  line-height:1; 
+  color: #1c1c1e;
+}
+
+.modal-actions { 
+  margin-top: 12px; 
+}
+
+.btn {
+  display:inline-block; 
+  padding: 10px 14px; 
+  border-radius:8px; 
+  text-decoration:none; 
+  font-weight:600;
+}
+
+.btn-primary { 
+  background:#0066cc; 
+  color:#fff; 
+}
+
+.btn-primary:hover { 
+  background:#004999; 
+}
+
+/* --- Dark mode when system is in night mode --- */
+@media (prefers-color-scheme: dark) {
+  body { 
     background: #1c1c1e; 
-    margin: 5% auto; 
-    padding: 20px; 
-    border-radius: 12px;
-    width: min(900px, 92vw); 
-    max-height: 82vh; 
-    overflow-y: auto; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-    color: #f0f0f5;
+    color: #f0f0f5; 
   }
-  .modal-header { 
-    display:flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    gap: 12px; 
+  h1, h2, .article, .modal-content { 
+    background: #2c2c2e; 
+    color: #f0f0f5; 
   }
-  .modal-title { 
-    margin: 0; 
-    font-size: 1.25rem; 
-  }
-  .modal-close { 
-    cursor: pointer; 
-    font-size: 1.5rem; 
-    border:none; 
-    background:transparent; 
-    line-height:1; 
-    color: #f0f0f5;
-  }
-  .modal-actions { 
-    margin-top: 12px; 
-  }
-  .btn {
-    display:inline-block; 
-    padding: 10px 14px; 
-    border-radius:8px; 
-    text-decoration:none; 
-    font-weight:600;
-  }
-  .btn-primary { 
-    background:#0a84ff; 
-    color:#fff; 
-  }
-  .btn-primary:hover { 
-    background:#0066cc; 
-  }
+  .article a { color: #0a84ff; }
+  .article p { color: #d0d0d5; }
+  .btn-primary { background: #0a84ff; color: #fff; }
+  .modal-close { color: #f0f0f5; }
+  .article img, .modal-img { filter: brightness(0.85) contrast(1.05); }
+}
 </style>
 </head>
 <body>
