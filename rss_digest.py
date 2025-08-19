@@ -209,45 +209,239 @@ def save_html(parsed_articles, output_file=OUTPUT_HTML):
 <meta charset="UTF-8">
 <title>RSS News Summary</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; color:#333; }
-h1 { background: #333; color: #fff; padding: 12px 16px; border-radius: 8px; }
-h2 { color: #333; margin-top: 24px; background:#f0f0f0; padding:10px 12px; border-radius:8px; }
-.article { background: #fff; border-radius: 8px; padding: 12px; margin: 12px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
-.article a { text-decoration: none; color: #0066cc; font-weight: bold; }
-.article a:hover { text-decoration: underline; }
-.article p { margin: 6px 0 0; color: #444; line-height: 1.4; }
-.article img { max-width: 100%; height: auto; margin: 6px 0; border-radius: 6px; display:block; }
-.meta { font-size: 0.85em; color: #666; margin-bottom: 6px; }
+  /* --- Dark night mode theme --- */
+  body { 
+    font-family: Arial, sans-serif; 
+    margin: 20px; 
+    background: #1c1c1e;  /* macOS dark background */
+    color: #f0f0f5;       /* light text */
+  }
+  h1 { 
+    background: #2c2c2e; 
+    color: #fff; 
+    padding: 12px 16px; 
+    border-radius: 8px; 
+  }
+  h2 { 
+    color: #f0f0f5; 
+    margin-top: 24px; 
+    background:#2c2c2e; 
+    padding:10px 12px; 
+    border-radius:8px; 
+  }
+  .article { 
+    background: #2c2c2e; 
+    border-radius: 8px; 
+    padding: 12px; 
+    margin: 12px 0; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5); 
+  }
+  .article a { 
+    text-decoration: none; 
+    color: #0a84ff; 
+    font-weight: bold; 
+  }
+  .article a:hover { 
+    text-decoration: underline; 
+  }
+  .article p { 
+    margin: 6px 0 0; 
+    color: #d0d0d5; 
+    line-height: 1.4; 
+  }
+  /* --- Images adjustments --- */
+  .article img, .modal-img {
+    max-width: 50%;        /* smaller images */
+    height: auto;
+    margin: 6px 0;
+    border-radius: 6px;
+    display: block;
+    filter: brightness(0.85) contrast(1.05); /* night mode friendly */
+  }
+
+  /* --- Modal styles --- */
+  .modal {
+    display: none; 
+    position: fixed; 
+    z-index: 9999; 
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+  }
+  .modal-content {
+    background: #1c1c1e; 
+    margin: 5% auto; 
+    padding: 20px; 
+    border-radius: 12px;
+    width: min(900px, 92vw); 
+    max-height: 82vh; 
+    overflow-y: auto; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    color: #f0f0f5;
+  }
+  .modal-header { 
+    display:flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    gap: 12px; 
+  }
+  .modal-title { 
+    margin: 0; 
+    font-size: 1.25rem; 
+  }
+  .modal-close { 
+    cursor: pointer; 
+    font-size: 1.5rem; 
+    border:none; 
+    background:transparent; 
+    line-height:1; 
+    color: #f0f0f5;
+  }
+  .modal-actions { 
+    margin-top: 12px; 
+  }
+  .btn {
+    display:inline-block; 
+    padding: 10px 14px; 
+    border-radius:8px; 
+    text-decoration:none; 
+    font-weight:600;
+  }
+  .btn-primary { 
+    background:#0a84ff; 
+    color:#fff; 
+  }
+  .btn-primary:hover { 
+    background:#0066cc; 
+  }
 </style>
 </head>
 <body>
 <h1>📰 RSS News Summary</h1>
+
+<!-- Modal -->
+<div id="articleModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle" class="modal-title"></h3>
+      <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    </div>
+    <img id="modalImg" class="modal-img" alt="" style="display:none;">
+    <p id="modalBody"></p>
+    <div class="modal-actions">
+      <a id="modalLink" class="btn btn-primary" href="#" target="_blank" rel="noopener">Read Original ↗</a>
+    </div>
+  </div>
+</div>
 """
 
+    # Insert categories + articles
     for category, items in parsed_articles.get("categories", {}).items():
         if not items:
             continue
         html_content += f"<h2>{html.escape(category)}</h2>\n"
         for item in items:
-            title = html.escape(item.get("title", ""))
-            link = html.escape(item.get("link", ""))
-            summary = html.escape(item.get("summary", ""))
-            img = item.get("image")
+            title_raw = item.get("title", "") or ""
+            link_raw = item.get("link", "") or ""
+            summary_raw = item.get("summary", "") or ""
+            img_raw = item.get("image", None)
+
+            def attr_safe(s: str) -> str:
+                return html.escape(s, quote=True).replace("'", "&#39;")
+
+            title_vis = html.escape(title_raw)
+            summary_vis = html.escape(summary_raw)
+            title_attr = attr_safe(title_raw)
+            link_attr = attr_safe(link_raw)
+            summary_attr = attr_safe(summary_raw)
+            img_attr = attr_safe(img_raw) if img_raw else ""
 
             html_content += '<div class="article">\n'
-            html_content += f'  <a href="{link}" target="_blank">{title}</a>\n'
-            if img:
-                html_content += f'  <a href="{link}" target="_blank"><img src="{html.escape(img)}" alt="image"></a>\n'
-            if summary:
-                html_content += f'  <p>{summary}</p>\n'
+            html_content += (
+                f'  <a href="#" class="open-modal" '
+                f'data-title="{title_attr}" '
+                f'data-summary="{summary_attr}" '
+                f'data-link="{link_attr}" '
+                f'data-image="{img_attr}">{title_vis}</a>\n'
+            )
+            if img_raw:
+                html_content += (
+                    f'  <a href="#" class="open-modal" '
+                    f'data-title="{title_attr}" '
+                    f'data-summary="{summary_attr}" '
+                    f'data-link="{link_attr}" '
+                    f'data-image="{img_attr}">'
+                    f'<img src="{html.escape(img_raw)}" alt="image"></a>\n'
+                )
+            if summary_raw:
+                html_content += f'  <p>{summary_vis}</p>\n'
             html_content += '</div>\n'
 
-    html_content += "</body></html>"
+    # Add script (modal + fetch + readability)
+    html_content += """
+<script src="https://unpkg.com/@mozilla/readability@0.4.4/Readability.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const modal = document.getElementById("articleModal");
+  const modalBody = document.getElementById("modalBody");
+  const modalLink = document.getElementById("modalLink");
+  const modalClose = document.getElementById("modalClose");
+  const modalImg = document.getElementById("modalImg");
+
+  document.querySelectorAll(".open-modal").forEach(link => {
+    link.addEventListener("click", function (e) {
+      e.preventDefault();
+      const url = this.dataset.link;
+      const title = this.dataset.title;
+      const img = this.dataset.image;
+
+      modalLink.href = url;
+      modal.querySelector(".modal-title").textContent = title;
+
+      modalBody.innerHTML = "<p>Loading full article...</p>";
+      if(img){
+        modalImg.src = img;
+        modalImg.style.display = "block";
+      } else {
+        modalImg.style.display = "none";
+      }
+
+      const proxy = "https://api.allorigins.win/get?url=";
+      const target = encodeURIComponent(url);
+
+      fetch(proxy + target)
+        .then(response => response.json())
+        .then(data => {
+          let doc = new DOMParser().parseFromString(data.contents, "text/html");
+          let article = new Readability(doc).parse();
+          if(article){
+            modalBody.innerHTML = "<p>" + article.textContent.replace(/\\n/g,"<br>") + "</p>";
+          } else {
+            modalBody.innerHTML = "<p>⚠️ Could not extract article text.</p>";
+          }
+        })
+        .catch(err => {
+          modalBody.innerHTML = "<p>⚠️ Could not load full article. Please open the original source.</p>";
+          console.error("Error loading article:", err);
+        });
+
+      modal.style.display = "block";
+    });
+  });
+
+  modalClose.addEventListener("click", function () { modal.style.display = "none"; });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape") modal.style.display="none"; });
+  window.addEventListener("click", function(e){ if(e.target===modal) modal.style.display="none"; });
+});
+</script>
+</body></html>
+"""
 
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(html_content)
 
     print(f"✅ HTML saved to {output_file}")
+
+
 
 # =======================
 # Main
