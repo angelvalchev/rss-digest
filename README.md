@@ -1,6 +1,6 @@
 # 📖 rss-digest
 
-A lightweight Python tool that fetches RSS feeds, generates summaries with OpenAI, and produces a clean, ad-free HTML digest of articles in **night mode**.  
+A lightweight Python tool that fetches RSS feeds, generates summaries using OpenAI, and produces a clean, ad-free HTML digest of articles in **night mode**.  
 Perfect for distraction-free reading without ads, trackers, or clutter.
 
 ---
@@ -18,16 +18,32 @@ Perfect for distraction-free reading without ads, trackers, or clutter.
 
 ## 🚀 Installation
 
-Clone the repository and set up a Python virtual environment:
+For detailed installation instructions, see [INSTALL.md](INSTALL.md).
 
-```bash
-git clone https://github.com/angelvalchev/rss-digest.git
-cd rss-digest
+---
 
-# Create a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate   # On macOS/Linux
-.venv\Scripts\activate      # On Windows
+## 📚 Usage
 
-# Install dependencies
-pip install -r requirements.txt
+For full usage instructions and examples, see [USAGE.md](USAGE.md).
+
+---
+
+## 🛠 Development
+
+- Requires Python 3.9 or higher
+- Core dependencies: `feedparser`, `beautifulsoup4`, `openai`
+- Recommended to use a virtual environment
+
+---
+
+## 📌 Versioning
+
+- **v1.0** – Stable RSS summarizer with HTML output and config
+- **v1.1** – Modal window feature
+- **v1.2** – Dark mode, image scaling, and stability improvements
+
+---
+
+## 📄 License
+
+MIT License
