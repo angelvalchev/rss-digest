@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from openai import OpenAI, APIConnectionError, APIError, RateLimitError
 from pathlib import Path
+from urllib.parse import urlparse
 
 # --- Secrets & config loading ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -99,6 +100,16 @@ def extract_image(entry):
         if src and src.startswith("http"):
             return src
     return None
+
+from urllib.parse import urlparse
+
+def get_domain(url: str) -> str:
+    """Extract the domain name from a URL."""
+    try:
+        parsed = urlparse(url)
+        return parsed.netloc.replace("www.", "")
+    except Exception:
+        return "source"
 
 def article_matches_excluded(article: dict, excluded_topics) -> bool:
     text = (article.get("title", "") + " " + article.get("summary", "")).lower()
@@ -359,6 +370,7 @@ h2 {
     </div>
     <img id="modalImg" class="modal-img" alt="" style="display:none;">
     <p id="modalBody"></p>
+    <p id="modalSource" style="margin-top:8px; font-size:0.9em; color:#888;"></p>
     <div class="modal-actions">
       <a id="modalLink" class="btn btn-primary" href="#" target="_blank" rel="noopener">Read Original ↗</a>
     </div>
@@ -374,6 +386,8 @@ h2 {
         for item in items:
             title_raw = item.get("title", "") or ""
             link_raw = item.get("link", "") or ""
+            source_raw = get_domain(link_raw)
+            source_attr = html.escape(source_raw, quote=True)
             summary_raw = item.get("summary", "") or ""
             img_raw = item.get("image", None)
 
@@ -393,7 +407,8 @@ h2 {
                 f'data-title="{title_attr}" '
                 f'data-summary="{summary_attr}" '
                 f'data-link="{link_attr}" '
-                f'data-image="{img_attr}">{title_vis}</a>\n'
+                f'data-image="{img_attr}" '
+                f'data-source="{source_attr}">{title_vis}</a>\n'
             )
             if img_raw:
                 html_content += (
@@ -401,7 +416,8 @@ h2 {
                     f'data-title="{title_attr}" '
                     f'data-summary="{summary_attr}" '
                     f'data-link="{link_attr}" '
-                    f'data-image="{img_attr}">'
+                    f'data-image="{img_attr}" '
+                    f'data-source="{source_attr}">'
                     f'<img src="{html.escape(img_raw)}" alt="image"></a>\n'
                 )
             if summary_raw:
@@ -418,6 +434,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const modalLink = document.getElementById("modalLink");
   const modalClose = document.getElementById("modalClose");
   const modalImg = document.getElementById("modalImg");
+  const modalSource = document.getElementById("modalSource");
 
   document.querySelectorAll(".open-modal").forEach(link => {
     link.addEventListener("click", function (e) {
@@ -425,12 +442,16 @@ document.addEventListener("DOMContentLoaded", function () {
       const url = this.dataset.link;
       const title = this.dataset.title;
       const img = this.dataset.image;
+      const source = this.dataset.source || "";
 
       modalLink.href = url;
       modal.querySelector(".modal-title").textContent = title;
 
+      // set source label
+      modalSource.textContent = source ? `Source: ${source}` : "";
+
       modalBody.innerHTML = "<p>Loading full article...</p>";
-      if(img){
+      if (img) {
         modalImg.src = img;
         modalImg.style.display = "block";
       } else {
@@ -445,8 +466,8 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(data => {
           let doc = new DOMParser().parseFromString(data.contents, "text/html");
           let article = new Readability(doc).parse();
-          if(article){
-            modalBody.innerHTML = "<p>" + article.textContent.replace(/\\n/g,"<br>") + "</p>";
+          if (article) {
+            modalBody.innerHTML = "<p>" + article.textContent.replace(/\\r?\\n/g, "<br>") + "</p>";
           } else {
             modalBody.innerHTML = "<p>⚠️ Could not extract article text.</p>";
           }
