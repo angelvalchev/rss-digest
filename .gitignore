@@ -6,3 +6,9 @@ __pycache__/
 digest.html
 rss_summary.html
 .venv/
+raw_response.json
+raw_input.json
+raw_input_articles.json
+raw_input_clusters.json
+rss_digest.py.bak
+raw_batches
