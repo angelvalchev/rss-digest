@@ -1336,7 +1336,7 @@ h2 {
 /* Limit preview summaries to 30 lines */
 .summary {
   display: -webkit-box;
-  -webkit-line-clamp: 30;   /* cap to 30 lines */
+  -webkit-line-clamp: 20;   /* cap to 20 lines */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
