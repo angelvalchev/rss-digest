@@ -1308,19 +1308,14 @@ h2 {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
   transition: transform 0.2s;
 }
-.article:hover {
-  transform: translateY(-3px);
-}
+.article:hover { transform: translateY(-3px); }
 
 .article a { 
   text-decoration: none; 
   color: #0066cc; 
   font-weight: bold; 
 }
-
-.article a:hover { 
-  text-decoration: underline; 
-}
+.article a:hover { text-decoration: underline; }
 
 .article p { 
   margin: 6px 0 0; 
@@ -1333,14 +1328,14 @@ h2 {
   margin-top: 4px;     /* little space above */
 }
 
-/* Limit preview summaries to 30 lines */
+/* Limit preview summaries to 20 lines */
 .summary {
   display: -webkit-box;
   -webkit-line-clamp: 20;   /* cap to 20 lines */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-height: 45em;         /* ~30 lines fallback */
+  max-height: 30em;         /* 20 lines * 1.5em line-height = 30em fallback */
   line-height: 1.5;
 }
 
@@ -1350,16 +1345,8 @@ h2 {
   color: #888;
   margin-top: 8px;
 }
-.modal-sources a:link,
-.modal-sources a:visited,
-.modal-sources a:hover,
-.modal-sources a:active {
-  color: #888;              
-  text-decoration: none;    
-}
-.modal-sources a:hover {
-  text-decoration: underline;
-}
+.modal-sources a { color: #888; text-decoration: none; }
+.modal-sources a:hover { text-decoration: underline; }
 
 /* Images adjustments */
 .article img, .modal-img {
@@ -1398,51 +1385,19 @@ h2 {
   gap: 12px; 
 }
 
-.modal-title { 
-  margin: 0; 
-  font-size: 1.25rem; 
-}
+.modal-title { margin: 0; font-size: 1.25rem; }
+.modal-close { cursor: pointer; font-size: 1.5rem; border:none; background:transparent; line-height:1; color: #1c1c1e; }
 
-.modal-close { 
-  cursor: pointer; 
-  font-size: 1.5rem; 
-  border:none; 
-  background:transparent; 
-  line-height:1; 
-  color: #1c1c1e;
-}
+.modal-actions { margin-top: 12px; }
 
-.modal-actions { 
-  margin-top: 12px; 
-}
+.btn { display:inline-block; padding: 10px 14px; border-radius:8px; text-decoration:none; font-weight:600; }
+.btn-primary { background:#0066cc; color:#fff; }
+.btn-primary:hover { background:#004999; }
 
-.btn {
-  display:inline-block; 
-  padding: 10px 14px; 
-  border-radius:8px; 
-  text-decoration:none; 
-  font-weight:600;
-}
-
-.btn-primary { 
-  background:#0066cc; 
-  color:#fff; 
-}
-
-.btn-primary:hover { 
-  background:#004999; 
-}
-
-/* --- Dark mode when system is in night mode --- */
+/* --- Dark mode --- */
 @media (prefers-color-scheme: dark) {
-  body { 
-    background: #1c1c1e; 
-    color: #f0f0f5; 
-  }
-  h1, h2, .article, .modal-content { 
-    background: #2c2c2e; 
-    color: #f0f0f5; 
-  }
+  body { background: #1c1c1e; color: #f0f0f5; }
+  h1, h2, .article, .modal-content { background: #2c2c2e; color: #f0f0f5; }
   .article a { color: #0a84ff; }
   .article p { color: #d0d0d5; }
   .btn-primary { background: #0a84ff; color: #fff; }
@@ -1462,7 +1417,7 @@ h2 {
       <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
     </div>
     <img id="modalImg" class="modal-img" alt="" style="display:none;">
-    <p id="modalBody"></p>
+    <div id="modalBody"></div>
     <p id="modalSource" class="modal-sources"></p>
     <div class="modal-actions">
       <a id="modalLink" class="btn btn-primary" href="#" target="_blank" rel="noopener">Read Original ↗</a>
@@ -1470,7 +1425,8 @@ h2 {
   </div>
 </div>
 """
-    # --- Parse GPT output into parsed_articles safely ---
+
+    # --- Safety checks ---
     if not parsed_articles or not isinstance(parsed_articles, dict):
         print("❌ No parsed articles to save")
         sys.exit(1)
@@ -1488,52 +1444,55 @@ h2 {
             link_raw = item.get("link", "") or ""
             source_raw = get_domain(link_raw)
             source_attr = html.escape(source_raw, quote=True)
+
+            # SUMMARY: strip HTML tags, unescape HTML entities, then escape minimal set (<,>,&)
             summary_raw = item.get("summary", "") or ""
-            img_raw = item.get("image", None)
+            # use your existing clean_html to strip tags
+            summary_stripped = clean_html(summary_raw)
+            # convert entities to characters then escape <>& but preserve quotes for nicer look
+            summary_vis = html.escape(html.unescape(summary_stripped), quote=False)
+
+            # Full story (kept as-is for modal). We escape for use in attribute safely.
             full_story_raw = item.get("full_story", "") or ""
+            full_story_attr = html.escape(full_story_raw or "", quote=True).replace("'", "&#39;")
+
+            img_raw = item.get("image", None)
             primary_link_raw = item.get("primary_link", link_raw)
-            sources_list = item.get("sources", [])
+            title_attr = html.escape(title_raw or "", quote=True).replace("'", "&#39;")
+            link_attr = html.escape(link_raw or "", quote=True).replace("'", "&#39;")
+            img_attr = html.escape(img_raw or "", quote=True).replace("'", "&#39;")
+            primary_link_attr = html.escape(primary_link_raw or "", quote=True).replace("'", "&#39;")
+            sources_list = item.get("sources", []) or []
+            sources_json = html.escape(json.dumps(sources_list, ensure_ascii=False), quote=True)
 
-            def attr_safe(s: str) -> str:
-                return html.escape(s or "", quote=True).replace("'", "&#39;")
-
-            title_vis = html.escape(title_raw)
-            summary_vis = html.escape(summary_raw)
-            title_attr = attr_safe(title_raw)
-            link_attr = attr_safe(link_raw)
-            summary_attr = attr_safe(summary_raw)
-            img_attr = attr_safe(img_raw) if img_raw else ""
-            full_story_attr = attr_safe(full_story_raw)
-            primary_link_attr = attr_safe(primary_link_raw)
-            sources_json = html.escape(json.dumps(sources_list, ensure_ascii=False))
             html_content += '<div class="article">\n'
             html_content += (
                 f'  <a href="#" class="open-modal" '
                 f'data-title="{title_attr}" '
-                f'data-summary="{summary_attr}" '
-                f'data-full-story="{full_story_attr}" '
                 f'data-link="{link_attr}" '
                 f'data-primary-link="{primary_link_attr}" '
                 f'data-image="{img_attr}" '
-                f'data-source="{source_attr}" '
-                f'data-sources="{sources_json}">{title_vis}</a>\n'
+                f'data-full-story="{full_story_attr}" '
+                f'data-sources="{sources_json}" '
+                f'data-source="{source_attr}">{html.escape(title_raw)}</a>\n'
             )
+
             if img_raw:
                 html_content += (
                     f'  <a href="#" class="open-modal" '
                     f'data-title="{title_attr}" '
-                    f'data-summary="{summary_attr}" '
-                    f'data-full-story="{full_story_attr}" '
                     f'data-link="{link_attr}" '
                     f'data-primary-link="{primary_link_attr}" '
                     f'data-image="{img_attr}" '
-                    f'data-source="{source_attr}" '
-                    f'data-sources="{sources_json}">'
+                    f'data-full-story="{full_story_attr}" '
+                    f'data-sources="{sources_json}" '
+                    f'data-source="{source_attr}">'
                     f'<img src="{html.escape(img_raw)}" alt="image"></a>\n'
                 )
 
-            if summary_raw:
-                html_content += f'  <p>{summary_vis}</p>\n'
+            # Insert preview paragraph with the "summary" class so CSS clamp applies
+            if summary_vis:
+                html_content += f'  <p class="summary">{summary_vis}</p>\n'
 
             # Build sources line (light grey, small text)
             sources_list_vis = []
@@ -1541,7 +1500,8 @@ h2 {
                 try:
                     host = urlparse(s.get("link", "")).hostname or ""
                     host = host.replace("www.", "")
-                    sources_list_vis.append(host)
+                    if host:
+                        sources_list_vis.append(host)
                 except:
                     pass
 
@@ -1552,8 +1512,9 @@ h2 {
             html_content += '</div>\n'  # close .article
 
         html_content += '</div>\n'  # close .articles
-        # Add script (modal + fetch + readability)
-        html_content += """
+
+    # Add script (modal + fetch + readability)
+    html_content += """
 <script src="https://unpkg.com/@mozilla/readability@0.4.4/Readability.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -1563,10 +1524,21 @@ document.addEventListener("DOMContentLoaded", function () {
   const modalClose  = document.getElementById("modalClose");
   const modalImg    = document.getElementById("modalImg");
   const modalSource = document.getElementById("modalSource");
+  const modalTitle  = modal.querySelector(".modal-title");
+
+  function clearModal() {
+    modalImg.style.display = "none";
+    modalImg.src = "";
+    modalBody.innerHTML = "";
+    modalSource.textContent = "";
+    modalLink.href = "#";
+    modalTitle.textContent = "";
+  }
 
   document.querySelectorAll(".open-modal").forEach(el => {
     el.addEventListener("click", function (e) {
       e.preventDefault();
+      clearModal();
 
       const url        = this.dataset.link || "";
       const title      = this.dataset.title || "";
@@ -1574,8 +1546,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const fullStory  = this.dataset.fullStory || "";
       const sourcesRaw = this.dataset.sources || "[]";
 
-      modalLink.href = url;
-      modal.querySelector(".modal-title").textContent = title;
+      modalLink.href = url || this.dataset.primaryLink || "#";
+      modalTitle.textContent = title;
 
       // Render sources as clickable chips
       try {
@@ -1583,7 +1555,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const chips = (Array.isArray(list) ? list : []).map(s => {
           const href = s && s.link ? s.link : "#";
           let host = "";
-          try { host = new URL(href).hostname.replace(/^www\./, ""); } catch {}
+          try { host = new URL(href).hostname.replace(/^www\\./, ""); } catch {}
           return `<a href="${href}" target="_blank" rel="noopener">${host}</a>`;
         });
         modalSource.innerHTML = chips.join(" • ");
@@ -1598,13 +1570,17 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         modalImg.style.display = "none";
       }
+
       // Prefer merged full_story; fallback to Readability fetch
-      if (fullStory.trim()) {
+      if (fullStory && fullStory.trim()) {
+        // The full_story was escaped for attribute safety and will be decoded by browser.
+        // Insert as HTML so paragraphs / formatting are preserved.
         modalBody.innerHTML = fullStory;
         modal.style.display = "block";
         return;
       }
 
+      // Otherwise attempt to fetch and extract (proxy)
       modalBody.innerHTML = "<p>Loading full article...</p>";
       const proxy  = "https://api.allorigins.win/get?url=";
       const target = encodeURIComponent(url);
@@ -1615,6 +1591,7 @@ document.addEventListener("DOMContentLoaded", function () {
           const doc = new DOMParser().parseFromString(data.contents, "text/html");
           const article = new Readability(doc).parse();
           if (article) {
+            // sanitize line breaks into paragraphs
             modalBody.innerHTML = "<p>" + article.textContent
               .replace(/\\r\\n/g, "<br>")
               .replace(/\\n/g, "<br>")
@@ -1633,17 +1610,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  modalClose.addEventListener("click", function () {
-    modal.style.display = "none";
-  });
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") modal.style.display = "none";
-  });
-
-  window.addEventListener("click", function (e) {
-    if (e.target === modal) modal.style.display = "none";
-  });
+  modalClose.addEventListener("click", function () { modal.style.display = "none"; clearModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { modal.style.display = "none"; clearModal(); }});
+  window.addEventListener("click", function (e) { if (e.target === modal) { modal.style.display = "none"; clearModal(); }});
 });
 </script>
 </body></html>
